@@ -15,7 +15,7 @@ from app.interfaces.schemas.base import Response
 from app.interfaces.service_dependencies import get_app_config_service
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/app_config", tags=["设置模块"])
+router = APIRouter(prefix="/app-config", tags=["设置模块"])
 
 
 @router.get(
@@ -56,7 +56,7 @@ async def update_llm_config(
     summary="获取Agent通用配置信息",
     description="包含最大迭代次数、最大重试次数、最大搜索结果数",
 )
-async def get_llm_config(
+async def get_agent_config(
         app_config_service: AppConfigService = Depends(get_app_config_service),
 ) -> Response[AgentConfig]:
     """获取Agent配置信息"""
@@ -70,7 +70,7 @@ async def get_llm_config(
     summary="获取Agent通用配置信息",
     description="包含最大迭代次数、最大重试次数、最大搜索结果数"
 )
-async def update_llm_config(
+async def update_agent_config(
         new_agent_config: AgentConfig,
         app_config_service: AppConfigService = Depends(get_app_config_service),
 ) -> Response[AgentConfig]:

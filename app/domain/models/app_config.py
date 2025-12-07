@@ -19,9 +19,9 @@ class LLMConfig(BaseModel):
 
 class AgentConfig(BaseModel):
     """Agent通用配置"""
-    max_iterations: int = Field(default=100, gt=0, lt=100)  # 最大迭代次数
-    max_retries: int = Field(default=3, gt=1, lt=10)  # LLM/工具最大重试次数
-    max_search_result: int = Field(default=10, gt=1, lt=30)  # 最大搜索结果数
+    max_iterations: int = Field(default=100, gt=0, le=100)  # 最大迭代次数
+    max_retries: int = Field(default=3, ge=1, le=10)  # LLM/工具最大重试次数
+    max_search_result: int = Field(default=10, ge=1, le=30)  # 最大搜索结果数
 
 
 class AppConfig(BaseModel):
