@@ -10,7 +10,7 @@ import logging
 from fastapi import APIRouter, Depends
 
 from app.application.services.app_config_service import AppConfigService
-from app.domain.models.app_config import LLMConfig
+from app.domain.models.app_config import LLMConfig, AgentConfig
 from app.interfaces.schemas.base import Response
 from app.interfaces.service_dependencies import get_app_config_service
 
@@ -28,7 +28,7 @@ async def get_llm_config(
         app_config_service: AppConfigService = Depends(get_app_config_service),
 ) -> Response[LLMConfig]:
     """获取LLM配置信息"""
-    llm_config = app_config_service.get_llm_config()
+    llm_config = await app_config_service.get_llm_config()
     return Response.success(data=llm_config.model_dump(exclude={"api_key"}))
 
 
@@ -43,8 +43,40 @@ async def update_llm_config(
         app_config_service: AppConfigService = Depends(get_app_config_service),
 ) -> Response[LLMConfig]:
     """更新LLM配置信息"""
-    updated_llm_config = app_config_service.update_llm_config(new_app_config)
+    updated_llm_config = await app_config_service.update_llm_config(new_app_config)
     return Response.success(
         msg="更新LLM信息配置成功",
         data=updated_llm_config.model_dump(exclude={"api_key"}),
+    )
+
+
+@router.get(
+    path="/agent",
+    response_model=Response[AgentConfig],
+    summary="获取Agent通用配置信息",
+    description="包含最大迭代次数、最大重试次数、最大搜索结果数",
+)
+async def get_llm_config(
+        app_config_service: AppConfigService = Depends(get_app_config_service),
+) -> Response[AgentConfig]:
+    """获取Agent配置信息"""
+    agent_config = await app_config_service.get_agent_config()
+    return Response.success(data=agent_config.model_dump())
+
+
+@router.post(
+    path="/agent",
+    response_model=Response[AgentConfig],
+    summary="获取Agent通用配置信息",
+    description="包含最大迭代次数、最大重试次数、最大搜索结果数"
+)
+async def update_llm_config(
+        new_agent_config: AgentConfig,
+        app_config_service: AppConfigService = Depends(get_app_config_service),
+) -> Response[AgentConfig]:
+    """更新LLM配置信息"""
+    updated_agent_config = await app_config_service.update_agent_config(new_agent_config)
+    return Response.success(
+        msg="更新Agent信息配置成功",
+        data=updated_agent_config.model_dump(),
     )
