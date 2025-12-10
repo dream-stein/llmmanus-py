@@ -6,10 +6,12 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
 	"aiomysql>=0.3.2",
+	"beautifulsoup4>=4.14.3",
 	"cos-python-sdk-v5>=1.9.38",
 	"fastapi>=0.121.3",
 	"filelock>=3.20.0",
 	"greenlet>=3.2.4",
+	"httpx>=0.28.1",
 	"json-repair>=0.54.2",
 	"mcp>=1.22.0",
 	"openai>=1.105.0",
