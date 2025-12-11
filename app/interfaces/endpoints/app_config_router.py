@@ -6,11 +6,12 @@
 @File    :app_config_router.py
 """
 import logging
+from typing import Optional, Dict
 
 from fastapi import APIRouter, Depends
 
 from app.application.services.app_config_service import AppConfigService
-from app.domain.models.app_config import LLMConfig, AgentConfig
+from app.domain.models.app_config import LLMConfig, AgentConfig, MCPConfig
 from app.interfaces.schemas.base import Response
 from app.interfaces.service_dependencies import get_app_config_service
 
@@ -80,3 +81,47 @@ async def update_agent_config(
         msg="更新Agent信息配置成功",
         data=updated_agent_config.model_dump(),
     )
+
+
+@router.get(
+    path="/mcp-servers",
+    response_model=Response,
+    summary="获取MCP服务器工具列表",
+    description="获取当前系统的MCP服务器列表，包含MCP服务器名字、工具列表、启动状态等",
+)
+async def get_mcp_servers(
+        app_config_service: AppConfigService = Depends(get_app_config_service),
+) -> Response:
+    """获取当前系统的MCP服务器工具列表"""
+    # todo:目前因为暂时未实现MCP客户端管理器，所以留到后面实现
+    pass
+
+
+@router.post(
+    path="/mcp-servers",
+    response_model=Response[Optional[Dict]],
+    summary="新增MCP服务器配置，支持传递一个或者多个配置",
+    description="传递MCP配置信息为系统新增MCP工具",
+)
+async def create_mcp_servers(
+        mcp_config: MCPConfig,
+        app_config_service: AppConfigService = Depends(get_app_config_service),
+) -> Response[Optional[Dict]]:
+    """根据传递的配置信息创建mcp服务"""
+    await app_config_service.update_and_create_mcp_servers(mcp_config)
+    return Response.success("新增MCP服务配置成功", None)
+
+
+@router.post(
+    path="/mcp-servers/{server_name}/delete",
+    response_model=Response[Optional[Dict]],
+    summary="删除MCP服务配置",
+    description="根据传递的MCP服务名字删除指定的MCP服务",
+)
+async def delete_mcp_server(
+        server_name: str,
+        app_config_service: AppConfigService = Depends(get_app_config_service),
+) -> Response[Optional[Dict]]:
+    """根据服务名字删除MCP服务器"""
+    await app_config_service.delete_mcp_server(server_name)
+    return Response.success("删除MCP服务配置成功", None)

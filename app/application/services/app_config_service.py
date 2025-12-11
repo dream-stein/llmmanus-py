@@ -5,7 +5,7 @@
 #Author  :Emcikem
 @File    :app_config_service.py
 """
-from app.domain.models.app_config import AppConfig, LLMConfig, AgentConfig
+from app.domain.models.app_config import AppConfig, LLMConfig, AgentConfig, MCPConfig
 from app.domain.repositories.app_config_repository import AppConfigRepository
 
 
@@ -55,3 +55,18 @@ class AppConfigService:
         self.app_config_repository.save(app_config)
 
         return agent_config
+
+    async def update_and_create_mcp_servers(self, mcp_config: MCPConfig) -> MCPConfig:
+        """根据传递的数据新增或更新MCP配置"""
+        # 1.获取应用配置
+        app_config = await self._load_app_config()
+
+        # 2.使用新的mcp_config更新原始的配置
+        app_config.mcp_config.mcpServers.update(mcp_config.mcpServers)
+
+        # 3.调用数据仓库完成存储or更新
+        self.app_config_repository.save(app_config)
+        return app_config.mcp_config
+
+    async def delete_mcp_server(self, server_name: str) -> MCPConfig:
+        pass
