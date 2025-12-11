@@ -13,7 +13,7 @@ import yaml
 from filelock import FileLock
 
 from app.application.errors.exception import ServerRequestsError
-from app.domain.models.app_config import AppConfig, LLMConfig, AgentConfig
+from app.domain.models.app_config import AppConfig, LLMConfig, AgentConfig, MCPConfig
 from app.domain.repositories.app_config_repository import AppConfigRepository
 
 logger = logging.getLogger(__name__)
@@ -38,6 +38,7 @@ class FileAppConfigRepository(AppConfigRepository):
             default_app_config = AppConfig(
                 llm_config=LLMConfig(),
                 agent_config=AgentConfig(),
+                mcp_config=MCPConfig()
             )
             self.save(default_app_config)
 
