@@ -5,6 +5,7 @@
 #Author  :Emcikem
 @File    :app_config_service.py
 """
+from app.application.errors.exception import NotFoundError
 from app.domain.models.app_config import AppConfig, LLMConfig, AgentConfig, MCPConfig
 from app.domain.repositories.app_config_repository import AppConfigRepository
 
@@ -69,4 +70,29 @@ class AppConfigService:
         return app_config.mcp_config
 
     async def delete_mcp_server(self, server_name: str) -> MCPConfig:
-        pass
+        """根据名字删除MCP服务"""
+        # 1.获取应用配置
+        app_config = await self._load_app_config()
+
+        # 2.查询对应的服务的名字是否存在
+        if server_name not in app_config.mcp_config.mcpServers:
+            raise NotFoundError(f"该MCP服务[{server_name}]不存在，请核实后重试")
+
+        # 3.如果存在则删除字典中对应的服务
+        del app_config.mcp_config.mcpServers[server_name]
+        self.app_config_repository.save(app_config)
+        return app_config.mcp_config
+
+    async def set_mcp_Server_enabled(self, server_name: str, enabled: bool) -> MCPConfig:
+        """更新MCP服务的启动状态"""
+        # 1.获取应用配置
+        app_config = await self._load_app_config()
+
+        # 2.查询对应的服务的名字是否存在
+        if server_name not in app_config.mcp_config.mcpServers:
+            raise NotFoundError(f"该MCP服务[{server_name}]不存在，请核实后重试")
+
+        # 3.如果存在则更新该MCP服务的启动状态
+        app_config.mcp_config.mcpServers[server_name].enabled = enabled
+        self.app_config_repository.save(app_config)
+        return app_config.mcp_config

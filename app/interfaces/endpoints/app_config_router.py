@@ -8,7 +8,7 @@
 import logging
 from typing import Optional, Dict
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Body
 
 from app.application.services.app_config_service import AppConfigService
 from app.domain.models.app_config import LLMConfig, AgentConfig, MCPConfig
@@ -125,3 +125,19 @@ async def delete_mcp_server(
     """根据服务名字删除MCP服务器"""
     await app_config_service.delete_mcp_server(server_name)
     return Response.success("删除MCP服务配置成功", None)
+
+
+@router.post(
+    path="/mcp-servers/{server_name}/enabled",
+    response_model=Response[Optional[Dict]],
+    summary="更新MCP服务的启动状态",
+    description="根据传递的server_name+enabled更新指定MCP服务的启动状态"
+)
+async def set_mcp_server_enabled(
+        server_name: str,
+        enabled: bool = Body(...),
+        app_config_service: AppConfigService = Depends(get_app_config_service),
+) -> Response[Optional[Dict]]:
+    """根据传递的server_name+enabled更新服务的启动状态"""
+    await app_config_service.set_mcp_Server_enabled(server_name, enabled)
+    return Response.success("更新MCP服务启动状态成功", None)
