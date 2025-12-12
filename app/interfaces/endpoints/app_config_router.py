@@ -109,7 +109,7 @@ async def create_mcp_servers(
 ) -> Response[Optional[Dict]]:
     """根据传递的配置信息创建mcp服务"""
     await app_config_service.update_and_create_mcp_servers(mcp_config)
-    return Response.success("新增MCP服务配置成功", None)
+    return Response.success(msg="新增MCP服务配置成功")
 
 
 @router.post(
@@ -124,7 +124,7 @@ async def delete_mcp_server(
 ) -> Response[Optional[Dict]]:
     """根据服务名字删除MCP服务器"""
     await app_config_service.delete_mcp_server(server_name)
-    return Response.success("删除MCP服务配置成功", None)
+    return Response.success(msg="删除MCP服务配置成功")
 
 
 @router.post(
@@ -140,4 +140,4 @@ async def set_mcp_server_enabled(
 ) -> Response[Optional[Dict]]:
     """根据传递的server_name+enabled更新服务的启动状态"""
     await app_config_service.set_mcp_Server_enabled(server_name, enabled)
-    return Response.success("更新MCP服务启动状态成功", None)
+    return Response.success(msg="更新MCP服务启动状态成功")
