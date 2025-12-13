@@ -5,9 +5,13 @@
 #Author  :Emcikem
 @File    :app_config_service.py
 """
+from typing import List
+
 from app.application.errors.exception import NotFoundError
 from app.domain.models.app_config import AppConfig, LLMConfig, AgentConfig, MCPConfig
 from app.domain.repositories.app_config_repository import AppConfigRepository
+from app.domain.services.tools.mcp import MCPClientManager
+from app.interfaces.schemas.app_config import ListMCPServerItem
 
 
 class AppConfigService:
@@ -56,6 +60,36 @@ class AppConfigService:
         self.app_config_repository.save(app_config)
 
         return agent_config
+
+    async def get_mcp_servers(self) -> List[ListMCPServerItem]:
+        """获取MCP服务器列表"""
+        # 1.获取当且应用配置
+        app_config = await self._load_app_config()
+
+        # 2.创建mcp客户端管理器，对配置信息不进行过滤
+        mcp_servers = []
+        mcp_client_manager = MCPClientManager(mcp_config=app_config.mcp_config)
+
+        try:
+            # 3.初始化mcp客户端管理器
+            await mcp_client_manager.initialize()
+
+            # 4.获取mcp客户端管理器的工具列表
+            tools = mcp_client_manager.tools
+
+            # 5.循环组装响应的工具格式
+            for server_name, server_config in app_config.mcp_config.mcpServers.items():
+                mcp_servers.append(ListMCPServerItem(
+                    server_name=server_name,
+                    enabled=server_config.enabled,
+                    transport=server_config.transport,
+                    tools=[tool.name for tool in tools.get(server_name, [])]
+                ))
+        finally:
+            # 清除MCP客户端管理器的相关资源
+            await mcp_client_manager.cleanup()
+
+        return mcp_servers
 
     async def update_and_create_mcp_servers(self, mcp_config: MCPConfig) -> MCPConfig:
         """根据传递的数据新增或更新MCP配置"""

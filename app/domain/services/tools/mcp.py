@@ -54,6 +54,11 @@ class MCPClientManager:
         self._tools: Dict[str, List[Tool]] = {}  # 缓存的MCP工具参数声明
         self._initialized: bool = False  # 是否初始化标识
 
+    @property
+    def tools(self) -> Dict[str, List[Tool]]:
+        """只读属性，返回缓存的MCP工具参数声明，键就是服务名字，值就是服务对应的工具声明"""
+        return self._tools
+
     async def initialize(self) -> None:
         """初始化函数，用于连接所有配置的MCP服务器"""
         # 1.检查下是否已经初始化成功
