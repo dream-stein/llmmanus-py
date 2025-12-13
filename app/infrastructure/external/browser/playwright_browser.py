@@ -121,7 +121,7 @@ class PlaywrightBrowser(BrowserProtocol):
 
     async def _get_element_by_id(self, index: int) -> Optional[Any]:
         """根据传递的索引/id获取对应的元素"""
-        # 1.判定当前页面是否存在可交互元素缓存
+        # 1.判断也当前页面是否存在可交互元素缓存
         if (
                 not hasattr(self.page, "interactive_elements_cache") or
                 not self.page.interactive_elements_cache or
@@ -333,6 +333,74 @@ class PlaywrightBrowser(BrowserProtocol):
                 "interactive_elements": interactive_elements,
             }
         )
+
+    async def input(
+            self,
+            text: str,
+            press_enter: bool,
+            index: Optional[int] = None,
+            coordinate_x: Optional[float] = None,
+            coordinate_y: Optional[float] = None,
+    ) -> ToolResult:
+        """根据传递的文本+换行标识+索引+xy位置实现输入框文本输入"""
+        # 1.确定页面存在
+        await self._ensure_page()
+
+        # 2.判定下是传递xy还是index
+        if coordinate_x is not None and coordinate_y is not None:
+            # 3.点击指定位置后输入文本
+            await self.page.mouse.click(x=coordinate_x, y=coordinate_y)
+            await self.page.keyboard.type(text)
+        elif index is not None:
+            try:
+                # 4.根据索引查找元素
+                element = await self._get_element_by_id(index)
+                if not element:
+                    return ToolResult(success=False, message=f"输入文本失败，该元素不存在")
+
+                try:
+                    # 5.先清空原始输入框的内容然后填充
+                    await element.fill("")
+                    await element.type(text)
+                except Exception as e:
+                    return ToolResult(success=False, message=f"输入文本失败：{str(e)}")
+            except Exception as e:
+                return ToolResult(success=False, message=f"输入文本失败：{str(e)}")
+
+        # 6.判断是否按Enter键
+        if press_enter:
+            await self.page.keyboard.press("enter")
+
+        return ToolResult(success=True)
+
+    async def move_mouse(self, coordinate_x: float, coordinate_y: float) -> ToolResult:
+        """传递xy坐标移动鼠标"""
+        await self._ensure_page()
+        await self.page.mouse.move(coordinate_x, coordinate_y)
+        return ToolResult(success=True)
+
+    async def press_key(self, key: str) -> ToolResult:
+        """传递按键进行模拟"""
+        await self._ensure_page()
+        await self.page.keyboard.press(key)
+        return ToolResult(success=True)
+
+    async def select_option(self, index: int, option: str) -> ToolResult:
+        """传递索引+下拉菜单选项选择指定的菜单信息"""
+        # 1.确保页面存在
+        await self._ensure_page()
+
+        try:
+            # 2.获取元素信息
+            element = await self._get_element_by_id(index)
+            if not element:
+                return ToolResult(success=False, message=f"使用索引[{index}]查找该下拉菜单不存在")
+
+            # 3.调用函数直接选择对应选项
+            await element.select_option(index=option)
+            return ToolResult(success=True)
+        except Exception as e:
+            return ToolResult(success=False, message=f"选择下拉菜单选项失败: {str(e)}")
 
     async def restart(self, url: str) -> ToolResult:
         """重启并跳转到指定URL"""
