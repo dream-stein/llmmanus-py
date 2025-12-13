@@ -7,12 +7,15 @@
 """
 import asyncio
 import logging
-from typing import Optional
+from typing import Optional, List
 
+from markdownify import markdownify
 from playwright.async_api import Playwright, Browser, Page, async_playwright
 
 from app.domain.external.browser import Browser as BrowserProtocol
 from app.domain.external.llm import LLM
+from app.infrastructure.external.browser.playwright_browser_fun import GET_VISIBLE_CONTENT_FUNC, \
+    GET_INTERACTIVE_ELEMENTS_FUNC
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +68,53 @@ class PlaywrightBrowser(BrowserProtocol):
                     # 7.判定当前页面是否是最新页面，如果不是则更新
                     if self.page != latest_page:
                         self.page = latest_page
+
+    async def _extract_content(self) -> str:
+        """提取当前页面内容"""
+        # 1.使用js代码获取当前页面可见元素内容
+        visible_content = await self.page.evaluate(GET_VISIBLE_CONTENT_FUNC)
+
+        # 2.使用markdownify找个库将html文档转换为markdown
+        markdown_content = markdownify(visible_content)
+
+        # 3.模型上下文长度有限，提取最大不超过50k个字符
+        max_content_length = min(len(markdown_content), 50000)
+
+        # 4.判定是否传递了llm，如果传递了，还可以使用llm对markdown_content进行整理
+        if self.llm:
+            # 5.调用llm对markdown_content内容进行二次整理
+            response = await self.llm.invoke([
+                {
+                    "role": "system",
+                    "content": "您是一名专业的网页信息提取助手。请从当前页面内容中提取所有信息并将其转换为markdown格式。"
+                },
+                {
+                    "role": "user",
+                    "content": markdown_content[:max_content_length]
+                }
+            ])
+            return response.get("content", "")
+
+    async def _extract_interactive_elements(self) -> List[str]:
+        """提取当前页面上的可交互元素"""
+        # 1.确保页面存在
+        await self._ensure_page()
+
+        # 2.清除当前页面上的缓存可交互元素列表
+        self.page.interactive_elements_cache = []
+
+        # 3.执行js脚本获取可交互的元素列表
+        interactive_elements = await self.page.evaluate(GET_INTERACTIVE_ELEMENTS_FUNC)
+
+        # 4.更新缓存的可交互元素列表
+        self.page.interactive_elements_cache = interactive_elements
+
+        # 5.格式化可交互元素为字符串
+        formatted_elements = []
+        for element in interactive_elements:
+            formatted_elements.append(f"{element['index']}:<{element['tag']}>{element['text']}</{element['tag']}>")
+
+        return formatted_elements
 
     async def initialize(self) -> bool:
         """初始化并确保资源是可用的"""
