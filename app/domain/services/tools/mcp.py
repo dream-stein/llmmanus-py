@@ -17,6 +17,7 @@ from mcp.client.streamable_http import streamablehttp_client
 from app.application.errors.exception import NotFoundError
 from app.domain.models.app_config import MCPConfig, MCPServerConfig, MCPTransport
 from app.domain.models.tool_result import ToolResult
+from app.domain.services.tools.base import BaseTool
 
 """
 MCP客户端管理器的开发思路：
@@ -330,3 +331,50 @@ class MCPClientManager:
             logger.info(f"清理MCP客户端管理器成功")
         except Exception as e:
             logger.error(f"清理MCP服务端管理器失败: {str(e)}")
+
+
+class MCPTool(BaseTool):
+    """MCP工具包，包含所有已配置+已启动的MCP工具"""
+    name: str = "mcp"
+
+    def __init__(self) -> None:
+        """构造函数，完成MCP工具包的初始化"""
+        super().__init__()
+        self._initialized: bool = False
+        self._tools = []
+        self._manager: MCPClientManager = None
+
+    async def initialize(self, mcp_config: Optional[MCPConfig] = None) -> None:
+        """初始化MCP工具包"""
+        # 1.判定是否初始化，如果未初始化则进行初始化
+        if not self._initialized:
+            # 2.初始化MCP客户端管理器
+            self._manager = MCPClientManager(mcp_config=mcp_config)
+            await self._manager.initialize()
+
+            # 3.获取mcpServers工具列表
+            self._tools = await self._manager.get_all_tools()
+            self._initialized = True
+
+    def get_tools(self) -> List[Dict[str, Any]]:
+        """同步获取工具包下的所有工具列表"""
+        return self._tools
+
+    def has_tool(self, tool_name: str) -> bool:
+        """传递工具名字判定工具是否存在"""
+        # 1.循环遍历所有的工具
+        for tool in self._tools:
+            # 2.判定工具的名字是否存在，如果是则返回True，否则返回False
+            if tool["function"]["name"] == tool_name:
+                return True
+
+        return False
+
+    async def invoke(self, tool_name: str, **kwargs) -> ToolResult:
+        """传递工具名字+参数调页MCP工具并获取结果"""
+        return await self._manager.invoke(tool_name, kwargs)
+
+    async def cleanup(self) -> None:
+        """清除MCP工具资源"""
+        if self._manager:
+            await self._manager.cleanup()
