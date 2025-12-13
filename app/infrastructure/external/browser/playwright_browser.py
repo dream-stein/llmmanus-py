@@ -273,3 +273,64 @@ class PlaywrightBrowser(BrowserProtocol):
         """重启并跳转到指定URL"""
         await self.cleanup()
         return await self.navigate(url)
+
+    async def scroll_up(self, to_top: Optional[bool] = None) -> ToolResult:
+        """向上滚动浏览器一个屏幕或者整个页面"""
+        # 1.确保页面存在
+        await self._ensure_page()
+
+        # 2.判定是否滚动在最顶部
+        if to_top:
+            await self.page.evaluate("window.scrollTo(0, 0")
+        else:
+            await self.page.evaluate("window.scrollBy(0, -window.scrollHeight)")
+
+        return ToolResult(success=True)
+
+    async def scroll_down(self, to_down: Optional[bool] = None) -> ToolResult:
+        """向下滚动浏览器一个屏幕或者到最底部"""
+        # 1.确保页面存在
+        await self._ensure_page()
+
+        # 2.判定是否滚动在最顶部
+        if to_down:
+            await self.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        else:
+            await self.page.evaluate("window.scrollBy(0, window.scrollHeight)")
+
+        return ToolResult(success=True)
+
+    async def screenshot(self, full_page: Optional[bool] = None) -> bytes:
+        """传递full_page完成页面截图"""
+        # 1.确保页面存在
+        await self._ensure_page()
+
+        # 2.创建一个截图配置
+        screenshot_options = {
+            "full_page": full_page,
+            "type": "png"
+        }
+
+        return await self.page.screenshot(**screenshot_options)
+
+    async def console_exec(self, javascript: str) -> ToolResult:
+        """传递js代码在当前页面控制台执行"""
+        # 1.确保页面存在
+        await self._ensure_page()
+        result = await self.page.evaluate(javascript)
+        return ToolResult(success=True, data={"result": result})
+
+    async def console_view(self, max_lines: Optional[int] = None) -> ToolResult:
+        """根据传递的行数查看控制台的日志"""
+        # 1.确保页面存在
+        await self._ensure_page()
+
+        # 2.可以指定另一段js代码查看控制台的内容
+        logs = await self.page.evaluate("""() => {
+            return window.console.log || [];
+        }""")
+
+        if max_lines is not None:
+            logs = logs[-max_lines:]
+
+        return ToolResult(success=True, data={"logs": logs})

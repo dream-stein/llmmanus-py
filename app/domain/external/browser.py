@@ -60,8 +60,8 @@ class Browser(Protocol):
         """向上滚动浏览器，如果没有传递to_top=True则向上滚动一页，否则直接滚动到最顶部"""
         ...
 
-    async def scroll_down(self, to_bottom: Optional[bool] = None) -> ToolResult:
-        """向下滚动浏览器，如果没有传递to_bottom=True则向下滚动一页，否则直接滚动到最底部"""
+    async def scroll_down(self, to_down: Optional[bool] = None) -> ToolResult:
+        """向下滚动浏览器，如果没有传递to_down=True则向下滚动一页，否则直接滚动到最底部"""
         ...
 
     async def screenshot(self, full_page: Optional[bool] = None) -> bytes:
