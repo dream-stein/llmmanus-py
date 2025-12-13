@@ -35,6 +35,37 @@ class PlaywrightBrowser(BrowserProtocol):
         self.browser: Optional[Browser] = None
         self.page: Optional[Page] = None
 
+    async def _ensure_browser(self) -> None:
+        """确保浏览器存在，如果不存在则初始化"""
+        if not self.browser or not self.page:
+            if not await self.initialize():
+                raise Exception("初始化Playwright浏览器失败")
+
+    async def _ensure_page(self) -> None:
+        """确保浏览器存在，如果不存在则新建"""
+        # 1.先保证浏览器存在
+        await self._ensure_browser()
+
+        # 2.如果页面不存在则创建新上下文+页面
+        if not self.page:
+            self.page = await self.browser.new_page()  # 等同于self.browser.new_context().new_page()
+        else:
+            # 3.如果页面存在则提取所有上下文
+            contexts = self.browser.contexts
+            if contexts:
+                # 4.获取默认上下文及页面
+                default_context = contexts[0]
+                pages = default_context.pages
+
+                # 5.判定页面是否存在
+                if pages:
+                    # 6.获取当前最新页面(Chrome浏览器新增页面时，默认往右侧添加，相当于pages中序号较大的页面)
+                    latest_page = pages[-1]
+
+                    # 7.判定当前页面是否是最新页面，如果不是则更新
+                    if self.page != latest_page:
+                        self.page = latest_page
+
     async def initialize(self) -> bool:
         """初始化并确保资源是可用的"""
         # 1.定义重试次数+重试延迟确保资源存在
@@ -60,7 +91,7 @@ class PlaywrightBrowser(BrowserProtocol):
                     if (
                             not page.url or
                             page.url in
-                            ["about:blank", "chrome://neetab/", "chrome://new-tab-page/"]
+                            ["about:blank", "chrome://newtab/", "chrome://new-tab-page/"]
                     ):
                         self.page = page
                     else:
@@ -122,3 +153,24 @@ class PlaywrightBrowser(BrowserProtocol):
             self.page = None
             self.browser = None
             self.playwright = None
+
+    async def wait_for_page_load(self, timeout: int = 15) -> bool:
+        """传递超时时间，等待当前页面是否加载完毕"""
+        # 1.确保当前页面存在
+        await self._ensure_page()
+
+        # 2.使用异步任务事件循环中的时间来作为开始时间(只和异步任务相关)
+        start_time = asyncio.get_event_loop().time()
+        check_interval = 5
+
+        # 3.循环检测网页是否加载成功
+        while asyncio.get_event_loop().time() - start_time < timeout:
+            # 4.使用js代码判断网页是否加载成功
+            is_completed = await self.page.evaluate("""() => document.readyState === 'complete'""")
+            if is_completed:
+                return True
+
+            # 5.未加载成功则休眠对应时间
+            await asyncio.sleep(check_interval)
+
+        return False
