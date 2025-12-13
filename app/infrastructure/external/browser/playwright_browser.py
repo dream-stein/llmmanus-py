@@ -7,7 +7,7 @@
 """
 import asyncio
 import logging
-from typing import Optional, List
+from typing import Optional, List, Any
 
 from markdownify import markdownify
 from playwright.async_api import Playwright, Browser, Page, async_playwright
@@ -118,6 +118,71 @@ class PlaywrightBrowser(BrowserProtocol):
             formatted_elements.append(f"{element['index']}:<{element['tag']}>{element['text']}</{element['tag']}>")
 
         return formatted_elements
+
+    async def _get_element_by_id(self, index: int) -> Optional[Any]:
+        """根据传递的索引/id获取对应的元素"""
+        # 1.判定当前页面是否存在可交互元素缓存
+        if (
+                not hasattr(self.page, "interactive_elements_cache") or
+                not self.page.interactive_elements_cache or
+                index >= len(self.page.interactive_elements_cache)
+        ):
+            return None
+
+        # 2.构建选择器
+        selector = f'[data-manus-id="manus-element-{index}"]'
+        return await self.page.query_selector(selector)
+
+    async def click(
+            self,
+            index: Optional[int] = None,
+            coordinate_x: Optional[float] = None,
+            coordinate_y: Optional[float] = None,
+    ) -> ToolResult:
+        """根据传递的索引位置+xy坐标实现点击"""
+        # 1.确保页面存在
+        await self._ensure_page()
+
+        # 2.判定传递的xy坐标还是index
+        if coordinate_x is not None and coordinate_y is not None:
+            await self.page.mouse.click(coordinate_x, coordinate_y)
+        elif index is not None:
+            try:
+                # 3.根据index获取元素
+                element = await self._get_element_by_id(index)
+                if not element:
+                    return ToolResult(success=False, message=f"使用索引{index}查找该元素无效，未找到")
+
+                # 4.检查元素是否可见的
+                is_visible = await self.page.evaluate("""(element) => {
+                    if (!element) return false;
+                    const rect = element.getBoundingClientRect();
+                    const style = window.getComputedStyle();
+                    return !(
+                        rect.width === 0 ||
+                        rect.height === 0 ||
+                        style.display === 'none' || 
+                        style.visibility === 'hidden' ||
+                        style.opacity === '0'
+                    );
+                }""")
+
+                # 5.如果元素不可见则执行以下代码
+                if not is_visible:
+                    # 6.尝试将页面滚动到该元素的位置
+                    await self.page.evaluate("""(element) => {
+                        if (element) {
+                            element.scrollIntoView({behavior: 'smooth', block: 'center'});
+                        }
+                    }""", element)
+                    await asyncio.sleep(1)
+
+                # 7.点击元素
+                await element.click(time=5000)
+            except Exception as e:
+                return ToolResult(success=False, message=f"点击元素出错：{str(e)}")
+
+        return ToolResult(success=True)
 
     async def initialize(self) -> bool:
         """初始化并确保资源是可用的"""
