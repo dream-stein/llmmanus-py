@@ -14,6 +14,7 @@ from playwright.async_api import Playwright, Browser, Page, async_playwright
 
 from app.domain.external.browser import Browser as BrowserProtocol
 from app.domain.external.llm import LLM
+from app.domain.models.tool_result import ToolResult
 from app.infrastructure.external.browser.playwright_browser_fun import GET_VISIBLE_CONTENT_FUNC, \
     GET_INTERACTIVE_ELEMENTS_FUNC
 
@@ -94,6 +95,8 @@ class PlaywrightBrowser(BrowserProtocol):
                 }
             ])
             return response.get("content", "")
+        else:
+            return markdown_content[:max_content_length]
 
     async def _extract_interactive_elements(self) -> List[str]:
         """提取当前页面上的可交互元素"""
@@ -119,7 +122,7 @@ class PlaywrightBrowser(BrowserProtocol):
     async def initialize(self) -> bool:
         """初始化并确保资源是可用的"""
         # 1.定义重试次数+重试延迟确保资源存在
-        max_retries = 3
+        max_retries = 5
         retry_interval = 1
 
         # 2.循环开始资源构建
@@ -137,15 +140,16 @@ class PlaywrightBrowser(BrowserProtocol):
                     # 6.获取当前上下文的第一个页面
                     page = contexts[0].pages[0]
 
-                    # 7.判定当前页面是不是空页面，如果是则直接使用page，否则新建一个
+                    # 7.判断当前页面是不是空页面，如果是则直接使用page，否则新建一个
                     if (
-                            not page.url or
-                            page.url in
-                            ["about:blank", "chrome://newtab/", "chrome://new-tab-page/"]
+                            page.url == "about:blank" or
+                            page.url == "chrome://newtab/" or
+                            page.url == "chrome://new-tab-page/" or
+                            not page.url
                     ):
                         self.page = page
                     else:
-                        # 8.当前页面以及有数据则新建一个页面
+                        # 8.当前页面已经有数据则新建一个页面
                         self.page = await contexts[0].new_page()
                 else:
                     # 9.上下文不存在或者页面不唯一则表示数据被污染，新建一个页面
@@ -157,15 +161,16 @@ class PlaywrightBrowser(BrowserProtocol):
                 # 10.清除所有资源
                 await self.cleanup()
 
-                # 11.判定重试次数是否等于最大重试次数
+                # 11.判断重试次数是否等于最大重试次数
                 if attempt == max_retries - 1:
-                    logger.error(f"初始化playwright浏览器失败(已重试{max_retries}次)：{str(e)}")
+                    logger.error(f"初始化Playwright浏览器失败(已重试{max_retries}次): {str(e)}")
                     return False
 
                 # 12.使用指数级增长进行休眠，最大休眠时间为10s
                 retry_interval = min(retry_interval * 2, 10)
-                logger.warning(f"初始化playwright浏览器失败，即将进行第{attempt + 1}次重试: {str(e)}")
+                logger.warning(f"初始化Playwright浏览器失败, 即将进行第{attempt + 1}次重试: {str(e)}")
                 await asyncio.sleep(retry_interval)
+        return False
 
     async def cleanup(self) -> None:
         """清除playwright资源，包含浏览器+页面+playwright"""
@@ -224,3 +229,47 @@ class PlaywrightBrowser(BrowserProtocol):
             await asyncio.sleep(check_interval)
 
         return False
+
+    async def navigate(self, url: str) -> ToolResult:
+        """根据传递的url跳转到指定页面"""
+        # 1.确保页面存在
+        await self._ensure_page()
+
+        try:
+            # 2.在跳转之前先将可交互元素的缓存清空
+            self.page.interactive_elements_cache = []
+
+            # 3.使用goto进行跳转
+            await self.page.goto(url)
+            return ToolResult(
+                success=True,
+                data={"interactive_elements": await self._extract_interactive_elements()}
+            )
+        except Exception as e:
+            # 返回错误的工具结果
+            return ToolResult(success=False, message=f"浏览器导航到[{url}]失败：{str(e)}")
+
+    async def view_page(self) -> ToolResult:
+        """获取当前网页的内容(内容+可视化元素列表)"""
+        # 1.确保页面存在
+        await self._ensure_page()
+
+        # 2.等待页面加载完成
+        await self.wait_for_page_load()
+
+        # 3.更新页面的可交互元素
+        interactive_elements = await self._extract_interactive_elements()
+
+        # 4.返回工具结果
+        return ToolResult(
+            success=True,
+            data={
+                "content": await self._extract_content(),
+                "interactive_elements": interactive_elements,
+            }
+        )
+
+    async def restart(self, url: str) -> ToolResult:
+        """重启并跳转到指定URL"""
+        await self.cleanup()
+        return await self.navigate(url)
