@@ -3,19 +3,9 @@
   <component name="ChangeListManager">
     <list default="true" id="4c1c0117-dd64-4ab1-87e8-d403083c451c" name="更改" comment="">
       <change afterPath="$PROJECT_DIR$/../sanbox/.env" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../sanbox/app/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../sanbox/app/core/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../sanbox/app/core/config.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../sanbox/app/interfaces/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../sanbox/app/interfaces/endpoints/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../sanbox/app/interfaces/endpoints/file.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../sanbox/app/interfaces/endpoints/routes.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../sanbox/app/interfaces/endpoints/shell.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../sanbox/app/interfaces/endpoints/supervisor.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../sanbox/app/interfaces/service_dependencies.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../sanbox/app/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../sanbox/app/models/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../sanbox/app/services/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../sanbox/app/interfaces/schema/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../sanbox/app/interfaces/schema/base.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../sanbox/app/interfaces/errors/exception_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/../sanbox/app/interfaces/errors/exception_handler.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,24 +15,24 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 6
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 6
+}</component>
   <component name="ProjectId" id="37961dUYtvYsRCb8n0fnw08niEj" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "/Users/linyongqi/PycharmProjects/llmmanus-py/api",
-    "nodejs_package_manager_path": "npm",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/linyongqi/PycharmProjects/llmmanus-py/api&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -60,6 +50,7 @@
       <option name="presentableId" value="Default" />
       <updated>1766302725590</updated>
       <workItem from="1766302726629" duration="58000" />
+      <workItem from="1766319635246" duration="23000" />
     </task>
     <servers />
   </component>
