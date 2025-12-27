@@ -9,11 +9,12 @@ import asyncio
 import getpass
 import logging
 import os.path
+import re
 import socket
 import uuid
 from typing import Dict, Optional
 
-from app.interfaces.errors.exceptions import BadRequestException, AppException
+from app.interfaces.errors.exceptions import BadRequestException, AppException, NotFoundException
 from app.models.shell import ShellExecResult, Shell, ConsoleRecord, ShellViewResult, ShellWaitResult
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,12 @@ class ShellService:
         return f"{username}@{hostname}:{display_dir}"
 
     @classmethod
+    def _remove_ansi_escape_codes(cls, text: str) -> str:
+        """从文本中删除ANSI转义字符"""
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[-/]*[@-~])')
+        return ansi_escape.sub("", text)
+
+    @classmethod
     def create_session_id(cls) -> str:
         """创建会话id，使用uuid4生成唯一值"""
         session_id = str(uuid.uuid4())
@@ -56,6 +63,28 @@ class ShellService:
         """根据传递的会话id+是否输出控制台记录获取Shell命令结果"""
         # 1.判断下传递的会话是否存在
         logger.debug(f"查看Shell会话内容：{self}")
+        if session_id not in self.active_shells:
+            logger.error(f"Shell会话不存在: {session_id}")
+            raise NotFoundException(f"Shell会话不存在：{session_id}")
+
+        # 2.获取会话
+        shell = self.active_shells[session_id]
+
+        # 3.获取原生是呼出并移除额外字符
+        raw_output = shell.output
+        clean_output = self._remove_ansi_escape_codes(raw_output)
+
+        # 4.判断是否获取控制台记录
+        if console:
+            console_records = self.get_console_records(session_id)
+        else:
+            console_records = []
+
+        return ShellViewResult(
+            session_id=session_id,
+            output=clean_output,
+            console_records=console_records,
+        )
 
     async def exec_command(
             self,
